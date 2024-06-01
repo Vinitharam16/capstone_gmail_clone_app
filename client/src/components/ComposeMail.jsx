@@ -1,6 +1,9 @@
 import { Close, DeleteOutlineOutlined } from "@mui/icons-material";
 import { Box, Button, Dialog, InputBase, TextField, Typography, styled } from "@mui/material";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import useApi from "../hooks/useApi";
+import { API_URLS } from "../services/api.urls";
+
 
 const dialogStyle = {
     height: '90%',
@@ -50,39 +53,93 @@ const SendButton = styled(Button)({
 })
 
 export default function ComposeMail({ openDialog, setOpenDialog }) {
-    const [data, setData]= useState({});
+    const [data, setData] = useState({});
+    const sentEmailservice = useApi(API_URLS.saveSentEmail);
+    const saveDraftService = useApi(API_URLS.saveDraftEmails);
 
-    const config = {
-        Host: "smtp.elasticemail.com",
-        Username: process.env.REACT_APP_USERNAME,
-        Password: process.env.REACT_APP_PASSWORD,
-        Port: '2525'
+    const baseUrl = "http://localhost:5000";
+
+    const closeComposeMail = async () => {
+
+        const payload = {
+            to: data.to,
+            from: 'vinitharambe1016@gmail.com',
+            subject: data.subject,
+            body: data.body,
+            date: new Date(),
+            image: '',
+            name: 'Vinitha ram',
+            starred: false,
+            type: 'drafts'
+        }
+
+        const res = await fetch(`${baseUrl}/email/save-draft`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+        }).then((res) => {
+            console.log(res);
+        }).catch((err) => {
+            console.log(err);
+        })
+
+        saveDraftService.call(payload);
+
+        if (!saveDraftService.error) {
+            setOpenDialog(false);
+            setData({})
+        } else {
+
+        }
     }
 
-    function closeComposeMail(e) {
-        e.preventDefault();
-        setOpenDialog(false);
-    }
 
-    function sendMail(e) {
-        e.preventDefault();
 
-        if (window.Email) {
-            window.Email.send({
-                ...config,
-                To: data.to,
-                From: "vinitharambe1016@gmail.com",
-                Subject: data.subject,
-                Body: data.body
-            }).then(
-                message => alert(message)
-            );
+    const sendingMail = async () => {
+        const payload = {
+            to: data.to,
+            from: 'vinitharambe1016@gmail.com',
+            subject: data.subject,
+            body: data.body,
+            date: new Date(),
+            image: '',
+            name: 'Vinitha ram',
+            starred: false,
+            type: 'sent'
+        }
+
+
+        const res = await fetch(`${baseUrl}/email/save`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+        }).then((res) => {
+            console.log(res);
+        }).catch((err) => {
+            console.log(err);
+        })
+
+        sentEmailservice.call(payload);
+
+        if (!sentEmailservice.error) {
+            setOpenDialog(false);
+
+            setData({});
+        } else {
+           
         }
 
         setOpenDialog(false);
+
     }
 
-    function onValueChange(e){
+    function onValueChange(e) {
         setData({
             ...data,
             [e.target.name]: e.target.value
@@ -102,7 +159,7 @@ export default function ComposeMail({ openDialog, setOpenDialog }) {
             </Header>
             <ReaceipientWrapper>
                 <InputBase placeholder="Receipients" name="to" onChange={(e) => onValueChange(e)} />
-                <InputBase placeholder="Subject" name="subject" onChange={(e) => onValueChange(e)}/>
+                <InputBase placeholder="Subject" name="subject" onChange={(e) => onValueChange(e)} />
 
             </ReaceipientWrapper>
             <TextField
@@ -113,7 +170,7 @@ export default function ComposeMail({ openDialog, setOpenDialog }) {
                 name="body"
             />
             <Footer>
-                <SendButton onClick={(e) => sendMail(e)}>Send</SendButton>
+                <SendButton onClick={(e) => sendingMail()}>Send</SendButton>
                 <DeleteOutlineOutlined onClick={() => setOpenDialog(false)} />
 
             </Footer>
